@@ -1,0 +1,13 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'Example Lambda zip copy'
+Resources:
+  GameLambda:
+    Type: AWS::Lambda:Function
+    Properties:
+      Description: Local Game Lambda Func
+      Handler: index.handler
+      Runtime: nodejs14.x
+      Code: '../lambda-fns/game'
+      Environment:
+        Variables:
+          TABLE_NAME: 'four-games'
