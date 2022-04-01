@@ -1,3 +1,7 @@
+# Four Backend
+
+This app is a work in progress, I wanted to make a game using AWS Serverless Services and to get used to working with web sockets.
+
 ## Useful commands
 
  * `npm run build`   compile typescript to js
