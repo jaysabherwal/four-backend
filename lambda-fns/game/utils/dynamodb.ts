@@ -1,46 +1,73 @@
 import { DocumentClient } from "aws-sdk/clients/dynamodb";
+import { Game } from "../models/game";
 
-export const retrieve = async (gameId: string, ddb: DocumentClient, tableName: string) => {
+const TABLE_NAME = process.env.TABLE_NAME || "default";
+
+export const create = async (game: Game, ddb: DocumentClient) => {
+    const date = new Date();
+    date.setHours(date.getHours() + 1);
+
+    const putParams = {
+        TableName: TABLE_NAME,
+        Item: {
+            ...game,
+            expiration: date.getTime() // this gives the wrong time?
+        },
+    };
+
+    return ddb.put(putParams).promise();
+}
+
+export const retrieve = async (gameId: string, ddb: DocumentClient): Promise<Game> => {
     const params = {
         Key: {
             "GameId": gameId
         },
-        TableName: tableName
+        TableName: TABLE_NAME
     };
 
-    return ddb.get(params).promise();
+    const { Item } = await ddb.get(params).promise();
+
+
+    if (!Item) {
+        console.error('Could not find game');
+    }
+
+    return Item as Game;
 };
 
-export const update = (items: any, gameId: string, ddb: DocumentClient, tableName: string) => {
-
-    const updateDetails = buildUpdateDetails(items);
-
+export const updateOnJoin = async (gameId: string, opponentConnectionId: string, ddb: DocumentClient ) => {
     const putParams = {
         Key: {
             "GameId": gameId
         },
-        UpdateExpression: `set ${updateDetails.str}`,
-        ExpressionValueAttributes: updateDetails.valuesObj,
-        TableName: tableName,
+        UpdateExpression: `SET opponentConnectionId = :opponentConnectionId`,
+        ExpressionValueAttributes: {
+            ":opponentConnectionId": opponentConnectionId
+        },
+        TableName: TABLE_NAME,
+        ReturnValues: "ALL_NEW"
+    };
+
+    return ddb.update(putParams).promise();
+};
+
+export const updateOnMove = async (gameId: string, state: (string | null)[][], ddb: DocumentClient) => {
+    const putParams = {
+        Key: {
+            "GameId": gameId
+        },
+        UpdateExpression: `SET state = :state`,
+        ExpressionValueAttributes: {
+            'state': JSON.stringify(state)
+        },
+        TableName: TABLE_NAME,
         ReturnValues: "UPDATED_NEW"
     };
 
     return ddb.update(putParams).promise();
 };
 
-const buildUpdateDetails = (items: any) => {
-    let arr = items.map((item: any, index: number) => {
-        return `${item.key} = :${index}`;
-    });
+export const updateOnDisconnect = () => {
 
-    let values: any = {};
-
-    items.forEach((item: any, index: number) => {
-        values[`:${index}`] = item.value;
-    });
-
-    return {
-        str: arr.join(", "),
-        valuesObj: values
-    }
 };

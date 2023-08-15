@@ -1,51 +1,41 @@
 import shortid = require("shortid");
 
-export class Game {
+export interface Game {
     id: string;
-    state: (string | null)[][] = [];
-    isHostsTurn: boolean = false;
+    state: (string | null)[][];
+    isHostsTurn: boolean;
     hostConnection: string;
-    opponentConnection: string;
-
-    initialise(connectionId: string) {
-        this.initialiseState();
-        this.hostConnection = connectionId;
-        this.id = shortid.generate();
-    }
-
-    private initialiseState() {
-        this.state = [
-            [null, null, null, null, null, null, null],
-            [null, null, null, null, null, null, null],
-            [null, null, null, null, null, null, null],
-            [null, null, null, null, null, null, null],
-            [null, null, null, null, null, null, null],
-            [null, null, null, null, null, null, null],
-        ]
-    }
-
-    toJson(addConnections = false) {
-        let json: any = {
-            id: this.id,
-            state: this.state,
-            isHostsTurn: this.isHostsTurn, 
-        }
-
-        if (addConnections) {
-            json.hostConnection = this.hostConnection;
-            json.opponentConnection = this.opponentConnection;
-        }
-
-        return json;
-    }
-
-    mapFromObject(json: any): Game {
-        this.id = json.id;
-        this.state = json.state;
-        this.isHostsTurn = json.isHostsTurn;
-        this.hostConnection = json.hostConnection;
-        this.opponentConnection = json.opponentConnection;
-
-        return this;
-    }
+    opponentConnection?: string;
 }
+
+export const gameToJson = (game: Game, addConnections = false) => {
+    let json: any = {
+        id: game.id,
+        state: game.state,
+        isHostsTurn: game.isHostsTurn, 
+    }
+
+    if (addConnections) {
+        json.hostConnection = game.hostConnection;
+        json.opponentConnection = game.opponentConnection;
+    }
+
+    return json;
+}
+
+export const initialiseGame = (connectionId: string): Game => {
+    const state = [
+        [null, null, null, null, null, null, null],
+        [null, null, null, null, null, null, null],
+        [null, null, null, null, null, null, null],
+        [null, null, null, null, null, null, null],
+        [null, null, null, null, null, null, null],
+        [null, null, null, null, null, null, null],
+    ];
+    return {
+        id: shortid.generate(),
+        state,
+        hostConnection: connectionId,
+        isHostsTurn: true
+    }
+};

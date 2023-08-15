@@ -9,16 +9,13 @@
     "watch": "tsc -w",
     "test": "jest",
     "cdk": "cdk",
-    "deploy": "npm run pre-deploy && cdk deploy '*' --require-approval 'never'",
-    "invoke:game": "sam local invoke Game -t local/template.yml -e local/event.json --region eu-west-1",
-    "prepare": "rm -rf artifacts & rm -rf build && mkdir -p artifacts build",
-    "copy": "cp package.json ./build && cp package-lock.json ./build && cp tsconfig.json ./build && cp -R ./lambda-fns ./build",
-    "install-deps": "cd build && npm install --production && npm run build",
-    "zip-game": "cd ./build/lambda-fns && zip -r ../../artifacts/game.zip ./game",
-    "zip-disconnect": "cd ./build/lambda-fns && zip -r ../../artifacts/disconnect.zip ./disconnect",
-    "zip-nodemodules": "cd build && zip -r ../artifacts/nodemodules.zip ./node_modules",
-    "rm-nodemodules": "cd build && rm -rf node_modules",
-    "pre-deploy": "npm run prepare && npm run copy && npm run install-deps && npm run zip-nodemodules && npm run rm-nodemodules && npm run zip-game && npm run zip-disconnect"
+    "setup-db": "docker run -p 8000:8000 amazon/dynamodb-local",
+    "create-db": "./scripts/create-db.sh",
+    "invoke:create": "sam local invoke Game -t local/template.yml -e local/event/create.json --region eu-west-1",
+    "invoke:join": "sam local invoke Game -t local/template.yml -e local/event/join.json --region eu-west-1",
+    "invoke:move": "sam local invoke Game -t local/template.yml -e local/event/move.json --region eu-west-1",
+    "build-functions": "make",
+    "deploy": "npm run build-functions && cdk deploy '*' --require-approval 'never'"
   },
   "devDependencies": {
     "@aws-cdk/assert": "1.109.0",
@@ -42,6 +39,7 @@
     "@aws-cdk/aws-lambda": "1.109.0",
     "@aws-cdk/core": "1.109.0",
     "aws-sdk": "2.931.0",
+    "lambda-log": "^3.1.0",
     "shortid": "^2.2.16",
     "source-map-support": "^0.5.19"
   }
