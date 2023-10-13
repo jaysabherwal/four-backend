@@ -52,7 +52,7 @@ export const updateOnJoin = async (gameId: string, opponentConnectionId: string,
     return ddb.update(putParams).promise();
 };
 
-export const updateOnMove = async (gameId: string, state: (string | null)[][], ddb: DocumentClient) => {
+export const updateOnMove = async (gameId: string, state: ("r" | "y" | null)[][], ddb: DocumentClient) => {
     const putParams = {
         Key: {
             "GameId": gameId

@@ -2,7 +2,7 @@ import shortid = require("shortid");
 
 export interface Game {
     id: string;
-    state: (string | null)[][];
+    state: ("r" | "y" | null)[][];
     isHostsTurn: boolean;
     hostConnection: string;
     opponentConnection?: string;

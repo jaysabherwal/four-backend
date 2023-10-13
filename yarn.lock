@@ -1071,6 +1071,13 @@
     jest-diff "^26.0.0"
     pretty-format "^26.0.0"
 
+"@types/lambda-log@3.0.0":
+  version "3.0.0"
+  resolved "https://registry.yarnpkg.com/@types/lambda-log/-/lambda-log-3.0.0.tgz#0900d3aafaa4807ef00da88bfca1e05c865413de"
+  integrity sha512-+RLrf12OC+oU1YKMKgICKMVKrYS8wq9qBJGsV7+IUGH1SsBu0NGUmaz0F6OFaIcT5gVqnPi4fbgSWft+mQDI/w==
+  dependencies:
+    "@types/node" "*"
+
 "@types/node@*":
   version "20.5.0"
   resolved "https://registry.yarnpkg.com/@types/node/-/node-20.5.0.tgz#7fc8636d5f1aaa3b21e6245e97d56b7f56702313"
@@ -1599,9 +1606,9 @@ camelcase@^6.0.0, camelcase@^6.2.0:
   integrity sha512-Gmy6FhYlCY7uOElZUSbxo2UCDH8owEk996gkbrpsgGtrJLM3J7jGxl9Ic7Qwwj4ivOE5AWZWRMecDdF7hqGjFA==
 
 caniuse-lite@^1.0.30001517:
-  version "1.0.30001520"
-  resolved "https://registry.yarnpkg.com/caniuse-lite/-/caniuse-lite-1.0.30001520.tgz#62e2b7a1c7b35269594cf296a80bdf8cb9565006"
-  integrity sha512-tahF5O9EiiTzwTUqAeFjIZbn4Dnqxzz7ktrgGlMYNLH43Ul26IgTMH/zvL3DG0lZxBYnlT04axvInszUsZULdA==
+  version "1.0.30001521"
+  resolved "https://registry.yarnpkg.com/caniuse-lite/-/caniuse-lite-1.0.30001521.tgz#e9930cf499f7c1e80334b6c1fbca52e00d889e56"
+  integrity sha512-fnx1grfpEOvDGH+V17eccmNjucGUnCbP6KL+l5KqBIerp26WK/+RQ7CIDE37KGJjaPyqWXXlFUyKiWmvdNNKmQ==
 
 capture-exit@^2.0.0:
   version "2.0.0"
@@ -2192,7 +2199,7 @@ fast-levenshtein@~2.0.6:
   resolved "https://registry.yarnpkg.com/fast-levenshtein/-/fast-levenshtein-2.0.6.tgz#3d8a5c66883a16a30ca8643e851f19baa7797917"
   integrity sha512-DCXu6Ifhqcks7TZKY3Hxp3y6qphY5SJZmrWMDrKcERSOXWQdMhU9Ig/PYrzyw/ul9jOIyh0N4M0tbC5hodg8dw==
 
-fast-safe-stringify@^2.1.1:
+fast-safe-stringify@^2.0.6:
   version "2.1.1"
   resolved "https://registry.yarnpkg.com/fast-safe-stringify/-/fast-safe-stringify-2.1.1.tgz#c406a83b6e70d9e35ce3b30a81141df30aeba884"
   integrity sha512-W+KJc2dmILlPplD/H4K9l9LcAHAfPtP6BY84uVLXQ6Evcz9Lcg33Y2z1IVblT6xdY54PXYVHEv+0Wpq8Io6zkA==
@@ -3339,12 +3346,12 @@ kleur@^3.0.3:
   resolved "https://registry.yarnpkg.com/kleur/-/kleur-3.0.3.tgz#a79c9ecc86ee1ce3fa6206d1216c501f147fc07e"
   integrity sha512-eTIzlVOSUR+JxdDFepEYcBMtZ9Qqdef+rnzWdRZuMbOywu5tO2w2N7rqjoANZ5k9vywhL6Br1VRjUIgTQx4E8w==
 
-lambda-log@^3.1.0:
-  version "3.1.0"
-  resolved "https://registry.yarnpkg.com/lambda-log/-/lambda-log-3.1.0.tgz#dd5833dc24b2eaf665769fc801674c1b421d940e"
-  integrity sha512-dfkFw+e0CoFftuOjxkufhi1srIpa4dM3sbbe+0KtfjX11auNl7Kok+5/+07IffjXUuspKAFeiHlHUPAHJzcL3A==
+lambda-log@3.0.0:
+  version "3.0.0"
+  resolved "https://registry.yarnpkg.com/lambda-log/-/lambda-log-3.0.0.tgz#178d0997afcbd50f5127c882c6d0aed3c75dc58e"
+  integrity sha512-xn6qbqJ/Jv5aybdACuXHPZVKg/bCfloFzfH18iZ8YJ1K29HaSLD+hGaF33NUudwD1opMTzXCrKoJIlgsJNdLpQ==
   dependencies:
-    fast-safe-stringify "^2.1.1"
+    fast-safe-stringify "^2.0.6"
 
 lazystream@^1.0.0:
   version "1.0.1"

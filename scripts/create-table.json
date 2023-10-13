@@ -1,0 +1,9 @@
+{
+    "TableName": "four-backend-games",
+    "KeySchema": [
+      { "AttributeName": "id", "KeyType": "HASH" }
+    ],
+    "AttributeDefinitions": [
+      { "AttributeName": "id", "AttributeType": "S" }
+    ]
+}
