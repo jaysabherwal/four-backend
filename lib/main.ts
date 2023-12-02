@@ -1,16 +1,15 @@
-import { LambdaWebSocketIntegration } from "@aws-cdk/aws-apigatewayv2-integrations";
-import { WebSocketApi, WebSocketStage } from "@aws-cdk/aws-apigatewayv2";
-import { AttributeType, Table } from "@aws-cdk/aws-dynamodb";
-import { Code, Function, LayerVersion, Runtime } from "@aws-cdk/aws-lambda";
-import { PolicyStatement } from "@aws-cdk/aws-iam";
+import { WebSocketApi, WebSocketStage } from '@aws-cdk/aws-apigatewayv2-alpha';
+import { WebSocketLambdaIntegration } from '@aws-cdk/aws-apigatewayv2-integrations-alpha';
+import { Stack } from 'aws-cdk-lib';
 import {
   CfnOutput,
-  Construct,
   Duration,
   RemovalPolicy,
-  Stack,
   StackProps,
-} from "@aws-cdk/core";
+} from "aws-cdk-lib";
+import { AttributeType, Table } from 'aws-cdk-lib/aws-dynamodb';
+import { Code, Function, LayerVersion, Runtime } from 'aws-cdk-lib/aws-lambda';
+import { Construct } from 'constructs';
 
 export class Main extends Stack {
   constructor(scope: Construct, id: string, props?: StackProps) {
@@ -27,7 +26,7 @@ export class Main extends Stack {
       this,
       `${id}-node-modules-layer`,
       {
-        compatibleRuntimes: [Runtime.NODEJS_14_X],
+        compatibleRuntimes: [Runtime.NODEJS_LATEST],
         code: Code.fromAsset("./artifacts/nodeModules.zip"),
         layerVersionName: "four-node-modules-layer",
         removalPolicy: RemovalPolicy.DESTROY,
@@ -36,7 +35,7 @@ export class Main extends Stack {
 
     const disconnectHandler = new Function(this, `${id}-disconnect`, {
       functionName: "four-disconnect-function",
-      runtime: Runtime.NODEJS_14_X,
+      runtime: Runtime.NODEJS_LATEST,
       code: Code.fromAsset("./artifacts/disconnect.zip"),
       handler: "disconnect/index.handler",
       timeout: Duration.seconds(60),
@@ -47,9 +46,19 @@ export class Main extends Stack {
       },
     });
 
+    let webSocketApi: WebSocketApi = new WebSocketApi(this, `${id}-web-socket-api`, {
+      disconnectRouteOptions: { integration: new WebSocketLambdaIntegration(`${id}-disconnect-integration`, disconnectHandler)}
+    });
+
+    const stage = new WebSocketStage(this, `${id}-stage`, {
+      webSocketApi,
+      stageName: "live",
+      autoDeploy: true,
+    });
+
     const gameHandler = new Function(this, `${id}-game`, {
       functionName: "four-game-function",
-      runtime: Runtime.NODEJS_14_X,
+      runtime: Runtime.NODEJS_LATEST,
       code: Code.fromAsset("./artifacts/game.zip"),
       handler: "game/index.handler",
       timeout: Duration.seconds(60),
@@ -60,44 +69,20 @@ export class Main extends Stack {
       },
     });
 
-    table.grantReadWriteData(disconnectHandler);
-    table.grantReadWriteData(gameHandler);
-
-    let webSocketApi = new WebSocketApi(this, `${id}-web-socket-api`, {
-      disconnectRouteOptions: {
-        integration: new LambdaWebSocketIntegration({
-          handler: disconnectHandler,
-        }),
-      },
-    });
-
-    const apiStage = new WebSocketStage(this, `${id}-stage`, {
-      webSocketApi,
-      stageName: "dev",
-      autoDeploy: true,
-    });
-
     webSocketApi.addRoute("game", {
-      integration: new LambdaWebSocketIntegration({
-        handler: gameHandler,
-      }),
+      integration: new WebSocketLambdaIntegration(`${id}-game-integration`, gameHandler),
     });
 
-    const connectionsArns = this.formatArn({
-      service: "execute-api",
-      resourceName: `${apiStage.stageName}/POST/*`,
-      resource: webSocketApi.apiId,
+    webSocketApi.addRoute('disconnect', {
+      integration: new WebSocketLambdaIntegration(`${id}-disconnect-integration`, disconnectHandler),
     });
 
-    gameHandler.addToRolePolicy(
-      new PolicyStatement({
-        actions: ["execute-api:ManageConnections"],
-        resources: [connectionsArns],
-      })
-    );
+    webSocketApi.grantManageConnections(gameHandler);
+    table.grantReadWriteData(gameHandler);
+    table.grantReadWriteData(disconnectHandler);
 
-    new CfnOutput(this, "WS API Url", {
-      value: webSocketApi.apiId ?? "Something went wrong with the deploy",
+    new CfnOutput(this, "WS_API_Url", {
+      value: webSocketApi.apiEndpoint ?? "Something went wrong with the deploy",
     });
   }
 }

@@ -1,23 +1,17 @@
-import { APIGatewayProxyEvent } from "aws-lambda"
-import { ApiGatewayManagementApi } from "aws-sdk";
-import { DocumentClient } from "aws-sdk/clients/dynamodb";
+import {
+    APIGatewayProxyResultV2,
+    APIGatewayProxyWebsocketEventV2,
+} from 'aws-lambda';
+import { ApiGatewayManagementApi } from "@aws-sdk/client-apigatewaymanagementapi";
 import { Action } from "./models/action";
 import { Message } from "./models/message";
 import { Game, gameToJson, initialiseGame } from "./models/game";
-import { Response } from "./models/response";
 import { create, retrieve, updateOnJoin, updateOnMove } from './utils/dynamodb';
-import { LambdaLog } from 'lambda-log';
+import { logger } from "./utils/logger";
 
-const ddb = new DocumentClient({ apiVersion: '2012-08-10', region: process.env.AWS_REGION });
-const log = new LambdaLog();
-
-export const game = async (event: APIGatewayProxyEvent): Promise<Response> => {
+export const game =  async (event: APIGatewayProxyWebsocketEventV2): Promise<APIGatewayProxyResultV2> => {
     try {
         const { connectionId } = event.requestContext;
-
-        if (!connectionId) {
-            throw new Error('Could not get connection id from event')
-        }
 
         if (!event.body) {
             throw new Error('Event body is missing');
@@ -30,7 +24,7 @@ export const game = async (event: APIGatewayProxyEvent): Promise<Response> => {
             endpoint: event.requestContext.domainName + '/' + event.requestContext.stage,
         });
 
-        log.info(`Action received: ${message.action}`);
+        logger.info(`Action received: ${message.action}`);
 
         switch (message.action) {
             case Action.CREATE:
@@ -46,7 +40,7 @@ export const game = async (event: APIGatewayProxyEvent): Promise<Response> => {
                 if (!message.data || !message.data.x || !message.data.y) {
                     return { statusCode: 400 };
                 }
-                await move(message.data.gameId, message.data.x, message.data.y, apigwManagementApi);
+                await move(message.data.gameId, message.data.x, message.data.y, apigwManagementApi, connectionId);
                 break;
             default:
                 throw new Error(`Could not perform action: ${message.action}`);
@@ -54,63 +48,53 @@ export const game = async (event: APIGatewayProxyEvent): Promise<Response> => {
 
         return { statusCode: 200 };
     } catch (error: any) {
-        log.error(error);
-        return { statusCode: 500, body: "Unknown error thrown from Lambda" };
+        logger.error(error);
+        return { statusCode: 500, body: "Error thrown" };
     }
 }
 
 const createGame = async (connectionId: string, apigwManagementApi: ApiGatewayManagementApi) => {
 
-    log.info(`Creating game`);
+    logger.info(`Creating game`);
 
     const game = initialiseGame(connectionId);
 
-    const { $response } = await create(game, ddb);
+    await create(game);
 
-    if ($response.error) {
-        log.error(`Error storing game`);
-        return;
-    }
-
-    log.info(`Posting to connection`);
+    logger.info(`Posting to connection`);
 
     await sendData(connectionId, game, apigwManagementApi);
 };
 
 const joinGame = async (gameId: string, connectionId: string, apigwManagementApi: ApiGatewayManagementApi): Promise<void> => {
-    const { $response } = await updateOnJoin(gameId, connectionId, ddb);
-
-    if ($response.error) {
-        log.error('Could not update data upon JOIN')
-        return;
-    }
-
-    const game = $response.data as Game;
-
+    const game = await updateOnJoin(gameId, connectionId);
+ 
     const postData = gameToJson(game);
 
     await sendData(game.hostConnection, postData, apigwManagementApi);
     await sendData(connectionId, postData, apigwManagementApi);
 }
 
-const move = async (gameId: string, x: number, y: number, apigwManagementApi: ApiGatewayManagementApi): Promise<void> => {
-    let game = await retrieve(gameId, ddb);
+const move = async (gameId: string, x: number, y: number, apigwManagementApi: ApiGatewayManagementApi, connectionId: string): Promise<void> => {
+    let game = await retrieve(gameId);
+
+    if (!game.opponentConnection) {
+        throw new Error('Game is not in progress');
+    }
+
     let cell = game.state[x][y];
 
     if (!cell) {
         throw new Error();
     }
 
-    // confirm the move is by the user?
+    if (!isMoveValid(game, connectionId)) {
+        throw new Error('User is not authorized to perform the next move');
+    }
 
     cell = game.isHostsTurn ? 'r' : 'y';
 
-    const { $response } = await updateOnMove(gameId, game.state, ddb);
-
-    if ($response.error) {
-        log.error("");
-        return;
-    }
+    await updateOnMove(gameId, game.state, game.isHostsTurn);
 
     const postData = gameToJson(game);
 
@@ -118,6 +102,12 @@ const move = async (gameId: string, x: number, y: number, apigwManagementApi: Ap
     await sendData(game.opponentConnection!, postData, apigwManagementApi);
 };
 
+const isMoveValid = (game: Game, connectionId: string) => {
+    const hostCanMovie = game.isHostsTurn && connectionId === game.hostConnection;
+    const opponentCanMove = !game.isHostsTurn && connectionId === game.opponentConnection;
+    return hostCanMovie || opponentCanMove;
+};
+
 const sendData = async (connectionId: string, game: Game, apigwManagementApi: ApiGatewayManagementApi) => {
-    return apigwManagementApi.postToConnection({ ConnectionId: connectionId, Data: JSON.stringify(gameToJson(game)) }).promise();
+    return apigwManagementApi.postToConnection({ ConnectionId: connectionId, Data: JSON.stringify(gameToJson(game)) });
 };

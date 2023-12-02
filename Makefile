@@ -7,14 +7,14 @@ prepare:
 
 copy:
 	cp package.json ./build
-	cp package-lock.json ./build
+	cp yarn.lock ./build
 	cp tsconfig.json ./build
 	cp -R ./lambda-fns ./build
 
 install_node_modules:
 	cd build && \
-	npm install --production && \
-	npm run build
+	yarn install --production && \
+	yarn run build
 
 zip_game:
 	cd ./build/lambda-fns && \
