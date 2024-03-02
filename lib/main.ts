@@ -58,7 +58,7 @@ export class Main extends Stack {
 
     const gameHandler = new Function(this, `${id}-game`, {
       functionName: "four-game-function",
-      runtime: Runtime.NODEJS_LATEST,
+      runtime: Runtime.NODEJS_18_X,
       code: Code.fromAsset("./artifacts/game.zip"),
       handler: "game/index.handler",
       timeout: Duration.seconds(60),
@@ -66,6 +66,7 @@ export class Main extends Stack {
       environment: {
         TABLE_NAME: table.tableName,
         NODE_PATH: "./:/opt/node_modules",
+        APIG_ENDPOINT: `https://${webSocketApi.apiId}.execute-api.${this.region}.amazonaws.com/${stage.stageName}`
       },
     });
 

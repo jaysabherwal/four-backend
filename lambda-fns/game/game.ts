@@ -7,11 +7,16 @@ import { Action } from "./models/action";
 import { Message } from "./models/message";
 import { Game, gameToJson, initialiseGame } from "./models/game";
 import { create, retrieve, updateOnJoin, updateOnMove } from './utils/dynamodb';
+import { badRequestResponse, errorResponse, okResponse } from "./utils/response";
 import { logger } from "./utils/logger";
 
 export const game =  async (event: APIGatewayProxyWebsocketEventV2): Promise<APIGatewayProxyResultV2> => {
     try {
-        const { connectionId } = event.requestContext;
+        const { connectionId, requestId } = event.requestContext;
+
+        logger.child({
+            requestId
+        });
 
         if (!event.body) {
             throw new Error('Event body is missing');
@@ -21,7 +26,7 @@ export const game =  async (event: APIGatewayProxyWebsocketEventV2): Promise<API
 
         const apigwManagementApi = new ApiGatewayManagementApi({
             apiVersion: '2018-11-29',
-            endpoint: event.requestContext.domainName + '/' + event.requestContext.stage,
+            endpoint: process.env.APIG_ENDPOINT,
         });
 
         logger.info(`Action received: ${message.action}`);
@@ -32,13 +37,13 @@ export const game =  async (event: APIGatewayProxyWebsocketEventV2): Promise<API
                 break;
             case Action.JOIN:
                 if (!message.data) {
-                    return { statusCode: 400 };
+                    return badRequestResponse('Missing data in body');
                 }
                 await joinGame(message.data.gameId, connectionId, apigwManagementApi);
                 break;
             case Action.MOVE:
                 if (!message.data || !message.data.x || !message.data.y) {
-                    return { statusCode: 400 };
+                    return badRequestResponse('Missing data within body (x or y)');
                 }
                 await move(message.data.gameId, message.data.x, message.data.y, apigwManagementApi, connectionId);
                 break;
@@ -46,10 +51,10 @@ export const game =  async (event: APIGatewayProxyWebsocketEventV2): Promise<API
                 throw new Error(`Could not perform action: ${message.action}`);
         }
 
-        return { statusCode: 200 };
+        return okResponse();
     } catch (error: any) {
         logger.error(error);
-        return { statusCode: 500, body: "Error thrown" };
+        return errorResponse();
     }
 }
 
@@ -88,7 +93,7 @@ const move = async (gameId: string, x: number, y: number, apigwManagementApi: Ap
         throw new Error();
     }
 
-    if (!isMoveValid(game, connectionId)) {
+    if (!isUsersMoveValid(game, connectionId)) {
         throw new Error('User is not authorized to perform the next move');
     }
 
@@ -102,7 +107,7 @@ const move = async (gameId: string, x: number, y: number, apigwManagementApi: Ap
     await sendData(game.opponentConnection!, postData, apigwManagementApi);
 };
 
-const isMoveValid = (game: Game, connectionId: string) => {
+const isUsersMoveValid = (game: Game, connectionId: string) => {
     const hostCanMovie = game.isHostsTurn && connectionId === game.hostConnection;
     const opponentCanMove = !game.isHostsTurn && connectionId === game.opponentConnection;
     return hostCanMovie || opponentCanMove;

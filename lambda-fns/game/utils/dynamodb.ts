@@ -8,6 +8,9 @@ const TABLE_NAME = process.env.TABLE_NAME || "default";
 const client = new DynamoDBClient({ apiVersion: '2012-08-10', region: process.env.AWS_REGION });
 const documentClient = DynamoDBDocumentClient.from(client);
 
+/**
+ * Expiration has to be in seconds for dynamodb TTL
+ */
 export const create = async (game: Game) => {
     try {
         const date = new Date();
@@ -17,7 +20,7 @@ export const create = async (game: Game) => {
             TableName: TABLE_NAME,
             Item: {
                 ...game,
-                expiration: date.getTime() // this gives the wrong time?
+                expiration: date.getTime() / 1000
             },
         };
     
@@ -29,11 +32,10 @@ export const create = async (game: Game) => {
 }
 
 export const retrieve = async (gameId: string): Promise<Game> => {
-
     try {        
         const params = {
             Key: {
-                "GameId": gameId
+                id: gameId
             },
             TableName: TABLE_NAME
         };
@@ -73,14 +75,13 @@ export const updateOnJoin = async (gameId: string, opponentConnectionId: string 
         logger.error('Error updating game');
         throw error;
     }
-    
 };
 
 export const updateOnMove = async (gameId: string, state: ("r" | "y" | null)[][], isHostsTurn: boolean) => {
     try {
         const params = {
             Key: {
-                "GameId": gameId
+                id: gameId
             },
             UpdateExpression: `SET state = :state, isHostsTurn = :isHostsTurn`,
             ExpressionValueAttributes: {
