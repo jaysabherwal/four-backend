@@ -54,6 +54,9 @@ export class Main extends Stack {
       webSocketApi,
       stageName: "live",
       autoDeploy: true,
+      throttle: {
+        rateLimit: 5
+      }
     });
 
     const gameHandler = new Function(this, `${id}-game`, {

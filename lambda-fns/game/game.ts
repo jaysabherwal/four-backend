@@ -5,7 +5,7 @@ import {
 import { ApiGatewayManagementApi } from "@aws-sdk/client-apigatewaymanagementapi";
 import { Action } from "./models/action";
 import { Message } from "./models/message";
-import { Game, gameToJson, initialiseGame } from "./models/game";
+import { Game, gameToObject, initialiseGame } from "./models/game";
 import { create, retrieve, updateOnJoin, updateOnMove } from './utils/dynamodb';
 import { badRequestResponse, errorResponse, okResponse } from "./utils/response";
 import { logger } from "./utils/logger";
@@ -68,13 +68,21 @@ const createGame = async (connectionId: string, apigwManagementApi: ApiGatewayMa
 
     logger.info(`Posting to connection`);
 
-    await sendData(connectionId, game, apigwManagementApi);
+    const postData = {
+        action: Action.CREATE,
+        data: gameToObject(game)
+    }
+
+    await sendData(connectionId, postData, apigwManagementApi);
 };
 
 const joinGame = async (gameId: string, connectionId: string, apigwManagementApi: ApiGatewayManagementApi): Promise<void> => {
     const game = await updateOnJoin(gameId, connectionId);
  
-    const postData = gameToJson(game);
+    const postData = {
+        action: Action.JOIN,
+        data: gameToObject(game)
+    }
 
     await sendData(game.hostConnection, postData, apigwManagementApi);
     await sendData(connectionId, postData, apigwManagementApi);
@@ -101,7 +109,10 @@ const move = async (gameId: string, x: number, y: number, apigwManagementApi: Ap
 
     await updateOnMove(gameId, game.state, game.isHostsTurn);
 
-    const postData = gameToJson(game);
+    const postData = {
+        action: Action.MOVE,
+        data: gameToObject(game)
+    }
 
     await sendData(game.hostConnection, postData, apigwManagementApi);
     await sendData(game.opponentConnection!, postData, apigwManagementApi);
@@ -113,6 +124,6 @@ const isUsersMoveValid = (game: Game, connectionId: string) => {
     return hostCanMovie || opponentCanMove;
 };
 
-const sendData = async (connectionId: string, game: Game, apigwManagementApi: ApiGatewayManagementApi) => {
-    return apigwManagementApi.postToConnection({ ConnectionId: connectionId, Data: JSON.stringify(gameToJson(game)) });
+const sendData = async (connectionId: string, message: Message, apigwManagementApi: ApiGatewayManagementApi) => {
+    return apigwManagementApi.postToConnection({ ConnectionId: connectionId, Data: JSON.stringify(message) });
 };

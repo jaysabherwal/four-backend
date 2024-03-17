@@ -8,7 +8,7 @@ export interface Game {
     opponentConnection?: string;
 }
 
-export const gameToJson = (game: Game, addConnections = false) => {
+export const gameToObject = (game: Game, addConnections = false) => {
     let json: any = {
         id: game.id,
         state: game.state,
